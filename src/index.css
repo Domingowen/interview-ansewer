@@ -1,0 +1,218 @@
+* {
+  margin: 0;
+  padding: 0;
+  font-family: "Arial", "Microsoft YaHei", "黑体", "宋体", sans-serif;
+}
+.container {
+  min-height: 100vh;
+  background-color: #fff;
+}
+.container .contacts_header {
+  height: 6vh;
+  line-height: 6vh;
+  width: 100%;
+  background-color: #ededed;
+  text-align: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+}
+.container .contacts_header .contacts_header_title {
+  font-size: 2vh;
+}
+.container .contacts_header .contacts_header_add {
+  position: absolute;
+  right: 1.5vw;
+  top: 0;
+  font-size: 2.5vh;
+  /* margin-top: -1vh; */
+}
+.container .contacts_search {
+  padding-top: 6vh;
+  background-color: #ededed;
+  width: 95vw;
+  height: 4vh;
+  padding-left: 2.5vw;
+  padding-right: 2.5vw;
+  padding-bottom: 1vh;
+}
+.container .contacts_search .contacts_search_input {
+  width: 90vw;
+  height: 100%;
+  background-color: #fff;
+  outline: none;
+  border: none;
+  border-radius: 5px;
+  font-size: 2vh;
+  padding-left: 2.5vw;
+  padding-right: 2.5vw;
+}
+.container .contacts_search .contacts_search_input_icon {
+  font-size: 2vw;
+}
+.container .contacts_search ::placeholder {
+  /* color: red; */
+  text-align: center;
+  font-size: 2vh;
+  /* font-size: 20px; */
+}
+.container .contacts_search ::-webkit-input-placeholder {
+  /* Chrome/Opera/Safari */
+  /* color: pink; */
+  font-size: 2vh;
+  /* font-size: 2.5vw; */
+}
+
+/* 
+  联系人列表
+*/
+.contacts_list {
+  padding-bottom: 10vh;
+}
+.contacts_list_container {
+  position: relative;
+}
+.contacts_list_top_sentinel{
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 7vh;
+  top: -15vh;
+}
+.contacts_list_bottom_sentinel{
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 6vh;
+  bottom: 0;
+  
+}
+.contacts_list_item {
+  display: flex;
+  align-items: center;
+  height: 7vh;
+}
+.contacts_avatar {
+  width: 5vh;
+  height: 5vh;
+  border-radius: 5px;
+  margin-right: 10px;
+  background-color: #fd9d39;
+}
+.avatar_orange{
+  background-color: #fd9d39;
+}
+.avatar_green {
+  background-color: #03C159;
+}
+.avatar_blue {
+  background-color: #2A80D6;
+}
+.contacts_avatar_container {
+  display: flex;
+  align-items: center;
+  padding-left: 4vw;
+}
+.contacts_userinfo {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+  border-bottom: 1px solid #ededed;
+}
+.contacts_nickname {
+  font-size: 1.8vh;
+}
+
+
+/* sticky */
+
+
+.contacts_sticky{
+  height: 4vh;
+  background-color: #EDEDED;
+  width: 96vw;
+  font-size: 1.8vh;
+  color: #717171;
+  display: flex;
+  align-items: center;
+  padding-left: 4vw;
+  position: sticky;
+  top: 6vh;
+}
+.contacts_sticky_active{
+  background-color: #fff;
+  color: #00c25d;
+  border-top: 1px solid #ededed;
+  border-bottom: 1px solid #ededed;
+}
+
+
+/* tabbar 底部导航 */
+.contacts_tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 7.5vh;
+  background-color: #ededed;
+}
+.contacts_tabbar_list {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+.contacts_tabbar_list .contacts_tabbar_item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5vh;
+}
+.contacts_tabbar_item_icon {
+  font-size: 2.5vh;
+  height: 2vh;
+  width: 10vw;
+  text-align: center;
+  padding-bottom: 7px;
+}
+.contacts_tabbar_item_active {
+  color: #00c25d;
+}
+
+/* sidbar */
+.alphabetSidebar{
+  position: fixed;
+  right: .3vh;
+  top: 50%;
+  height: 70vh;
+  width: 3vh;
+  margin-top: -35vh;
+  display: flex;
+  align-items: center;
+}
+.alphabetSidebar .sidebar_list{
+  /* display: flex; */
+  /* flex-direction: ; */
+}
+.alphabetSidebar .sidebar_list .sidebar_item{
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #333;
+
+}
+
+.alphabetSidebar .sidebar_list .sidebar_item_active{
+  background-color: #00c25d;
+  border-radius: 50%;
+  color: #fff;
+}
