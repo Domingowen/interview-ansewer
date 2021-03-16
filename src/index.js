@@ -1,48 +1,259 @@
 
 window.onload = function () {
-  /* 底部tabbar 事件处理 */
- 
 
-  let officalAccount = [
-    { name: "新朋友", color: "avatar_orange" },
-    { name: "只聊天的朋友", color: "avatar_orange" },
-    { name: "群组", color: "avatar_green" },
-    { name: "标签", color: "avatar_blue" },
-    { name: "公众号", color: "avatar_blue" },
-    { name: "企业微信", color: "avatar_blue" },
-  ]; //官方账号
-  // let rootContainer = document.querySelector('.container')
-  let contactsList = document.querySelector(".contacts_list");
-  contactsList.insertAdjacentHTML(
-    "afterbegin",
-    `<ul class="contacts_list_container">
-        </ul>`
-  );
-  let listContainer = document.querySelector(".contacts_list_container");
-  officalAccount.forEach((val) => {
-    listContainer.insertAdjacentHTML(
-      "beforeend",
-      `<li class="contacts_list_item">
-            <div class="contacts_avatar_container">
-              <span class="contacts_avatar ${val.color}"></span>
-            </div>
-            <div class="contacts_userinfo">
-              <span class="contacts_nickname">${val.name}</span>
-            </div>
-          </li>`
-    );
-  });
-  let userMap = new Map(); //用户数据 Map
-  let alphabet = Array.from(Array(26).keys()).map((val, i) => {
-    return String.fromCharCode(65 + i);
-  }); // 生成字母
-  alphabet.forEach((val, index) => {
-    userMap.set(val, {
-      prefix: val,
-      userList: [],
-      scrollTop: 0,
-    });
-  })
+  class wechatContacts {
+    constructor() {
+      this.headerObserver = null;
+      this.footerObserver = null;
+      this.officalAccount = [
+        { name: "新朋友", color: "avatar_orange" },
+        { name: "只聊天的朋友", color: "avatar_orange" },
+        { name: "群组", color: "avatar_green" },
+        { name: "标签", color: "avatar_blue" },
+        { name: "公众号", color: "avatar_blue" },
+        { name: "企业微信", color: "avatar_blue" },
+      ];
+      this.sidebarList = new Set();
+      this.contactsList = document.querySelector(".contacts_list");
+      this.userMap = new Map();
+      this.alphabet = Array.from(Array(26).keys()).map((val, i) => {
+        return String.fromCharCode(65 + i);
+      }); // 生成字母
+    }
+
+    init() {
+      this.generateOfficialList();
+      this.generateUserName();
+      this.bottomBarClickHandle();
+      this.generateSidebar();
+      this.startObserverHeader();
+      this.startObserverFooter();
+    }
+    generateOfficialList() {
+      this.contactsList.insertAdjacentHTML(
+        "afterbegin",
+        `<ul class="contacts_list_container">
+          </ul>`
+      );
+      let listContainer = document.querySelector(".contacts_list_container");
+      this.officalAccount.forEach((val) => {
+        listContainer.insertAdjacentHTML(
+          "beforeend",
+          `<li class="contacts_list_item">
+              <div class="contacts_avatar_container">
+                <span class="contacts_avatar ${val.color}"></span>
+              </div>
+              <div class="contacts_userinfo">
+                <span class="contacts_nickname">${val.name}</span>
+              </div>
+            </li>`
+        );
+      });
+    }
+    generateUserName() {
+      //生成微信名字 然后生成对应的微信用户列表
+      this.alphabet.forEach((val, index) => {
+        this.userMap.set(val, {
+          prefix: val,
+          userList: [],
+          scrollTop: 0,
+        });
+      });
+      let i = 0;
+      while (i < 1000) {
+        //循环名字数据 生成 new map
+        i++;
+        let userName = generateName();
+        if (this.userMap.has(userName.charAt(0))) {
+          this.userMap.set(userName.charAt(0), {
+            prefix: userName.charAt(0),
+            userList: this.userMap
+              .get(userName.charAt(0))
+              .userList.concat(userName),
+          });
+        }
+      }
+      this.contactsList.insertAdjacentHTML(
+        "beforeend",
+        `${[...this.userMap]
+          .map((val) => `<ul class="contacts_list_container"></ul>`)
+          .join("")}`
+      );
+      let getAllContactsList = document.querySelectorAll(
+        ".contacts_list_container"
+      );
+      [...this.userMap].map((val, key, map) => {
+        // map loop 然后判断对应的数据
+        // console.log(val, key);
+        // console.log(getAllContactsList[key + 1]);
+        let userInfoItem = val[1].userList.map((subVal, subKey, map) => {
+          return `<li class="contacts_list_item">
+          <div class="contacts_avatar_container">
+            <span class="contacts_avatar"></span>
+          </div>
+          <div class="contacts_userinfo">
+            <span class="contacts_nickname">${subVal}</span>
+          </div>
+        </li>`;
+        });
+        getAllContactsList[key + 1].insertAdjacentHTML(
+          "afterbegin",
+          `<li class="contacts_list_top_sentinel"></li>
+          <li class="contacts_sticky">${val[0]}</li>${userInfoItem.join("")}
+          <li class="contacts_list_bottom_sentinel"></li>
+          `
+        );
+      });
+    }
+    generateSidebar() {
+      let sidebarListElement = document.querySelector(".sidebar_list");
+      let getAllSticky = document.querySelectorAll(".contacts_sticky");
+      Array.prototype.slice.call(getAllSticky, null).forEach((val) => {
+        this.sidebarList.add([
+          val.textContent,
+          val.getBoundingClientRect().top,
+        ]);
+      });
+      for (let item of this.sidebarList) {
+        // console.log(item);
+        sidebarListElement.insertAdjacentHTML(
+          "beforeend",
+          `<li class="sidebar_item" data-scrollTop=${item[1]}>${item[0]}</li>`
+        );
+      }
+      this.sidebarScrollTopRect();
+    }
+    bottomBarClickHandle() {
+      let bottomTabbarItem = document.querySelectorAll(".contacts_tabbar_item");
+      // console.log(bottomItem);
+      bottomTabbarItem.forEach((val) => {
+        val.onclick = function () {
+          Array.prototype.slice
+            .call(val.parentNode.children, null)
+            .forEach((sibling) => {
+              sibling.classList.remove("contacts_tabbar_item_active");
+            });
+          val.classList.add("contacts_tabbar_item_active");
+        };
+      });
+    }
+
+    sidebarScrollTopRect() {
+      let getAllSidebarItem = document.querySelectorAll(".sidebar_item");
+      getAllSidebarItem.forEach((val) => {
+        val.onclick = function () {
+          // console.log(val);
+          window.scrollTo(0, val.dataset.scrolltop - 30);
+          Array.prototype.slice
+            .call(val.parentNode.children, null)
+            .forEach((sibling) => {
+              sibling.classList.remove("sidebar_item_active");
+            });
+          val.classList.add("sidebar_item_active");
+        };
+      });
+    }
+    stickyHeaderObserver() {
+      this.headerObserver = new IntersectionObserver(
+        (records) => {
+          let getAllSidebarItem = document.querySelectorAll(".sidebar_item");
+          for (const record of records) {
+            const targetInfo = record.boundingClientRect;
+            const stickyTarget = record.target.parentElement.querySelector(
+              ".contacts_sticky"
+            );
+            const rootBoundsInfo = record.rootBounds;
+            if (targetInfo.bottom < rootBoundsInfo.top) {
+              stickyTarget.classList.add("contacts_sticky_active");
+              Array.from(getAllSidebarItem).forEach((val) => {
+                if (val.textContent === stickyTarget.textContent) {
+                  val.classList.add("sidebar_item_active");
+                }
+              });
+            }
+            if (
+              targetInfo.bottom >= rootBoundsInfo.top &&
+              targetInfo.bottom < rootBoundsInfo.bottom
+            ) {
+              stickyTarget.classList.remove("contacts_sticky_active");
+              Array.from(getAllSidebarItem).forEach((val) => {
+                if (val.textContent === stickyTarget.textContent) {
+                  // console.log(val);
+                  val.classList.remove("sidebar_item_active");
+                }
+              });
+            }
+          }
+        },
+        { threshold: [0] }
+      );
+    }
+    stickyFooterObserver() {
+      this.footerObserver = new IntersectionObserver(
+        (records, observer) => {
+          let getAllSidebarItem = document.querySelectorAll(".sidebar_item");
+          for (const record of records) {
+            const targetInfo = record.boundingClientRect;
+            const stickyTarget = record.target.parentElement.querySelector(
+              ".contacts_sticky"
+            );
+            const rootBoundsInfo = record.rootBounds;
+            const ratio = record.intersectionRatio;
+
+            // Started sticking.
+            if (targetInfo.bottom > rootBoundsInfo.top && ratio === 1) {
+              // console.log(stickyTarget, "footer stickyTarget");
+              stickyTarget.classList.add("contacts_sticky_active");
+              Array.from(getAllSidebarItem).forEach((val) => {
+                if (val.textContent === stickyTarget.textContent) {
+                  val.classList.add("sidebar_item_active");
+                }
+              });
+            }
+            // Stopped sticking.
+            if (
+              targetInfo.top < rootBoundsInfo.top &&
+              targetInfo.bottom < rootBoundsInfo.bottom
+            ) {
+              stickyTarget.classList.remove("contacts_sticky_active");
+              Array.from(getAllSidebarItem).forEach((val) => {
+                if (val.textContent === stickyTarget.textContent) {
+                  val.classList.remove("sidebar_item_active");
+                }
+              });
+            }
+          }
+        },
+        { threshold: [1] }
+      );
+    }
+    startObserverHeader() {
+      let getAllSentialTop = document.querySelectorAll(
+        ".contacts_list_top_sentinel"
+      );
+
+      Array.from(getAllSentialTop).forEach((val) => {
+        // 监听所有的top  sential
+        this.stickyHeaderObserver();
+        this.headerObserver.observe(val);
+      });
+    }
+    startObserverFooter() {
+      let getAllSentialBottom = document.querySelectorAll(
+        ".contacts_list_bottom_sentinel"
+      );
+      Array.from(getAllSentialBottom).forEach((val) => {
+        // 监听所有的bottom  sential
+        this.stickyFooterObserver()
+        this.footerObserver.observe(val);
+      });
+    }
+  }
+
+  new wechatContacts().init();
+}
+
+
   function capFirst(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
   }
@@ -50,7 +261,6 @@ window.onload = function () {
   function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
   }
-
   function generateName(){
     let name1 = ["abandoned","able","absolute","adorable","adventurous","academic","acceptable","acclaimed","accomplished","accurate","aching","acidic","acrobatic","active","actual","adept","admirable","admired","adolescent","adorable","adored","advanced","afraid","affectionate","aged","aggravating","aggressive","agile","agitated","agonizing","agreeable","ajar","alarmed","alarming","alert","alienated","alive","all","altruistic","amazing","ambitious","ample","amused","amusing","anchored","ancient","angelic","angry","anguished","animated","annual","another","antique","anxious","any","apprehensive","appropriate","apt","arctic","arid","aromatic","artistic","ashamed","assured","astonishing","athletic","attached","attentive","attractive","austere","authentic","authorized","automatic","avaricious","average","aware","awesome","awful","awkward","babyish","bad","back","baggy","bare","barren","basic","beautiful","belated","beloved","beneficial","better","best","bewitched","big","big-hearted","biodegradable","bite-sized","bitter","black","black-and-white","bland","blank","blaring","bleak","blind","blissful","blond","blue","blushing","bogus","boiling","bold","bony","boring","bossy","both","bouncy","bountiful","bowed","brave","breakable","brief","bright","brilliant","brisk","broken","bronze","brown","bruised","bubbly","bulky","bumpy","buoyant","burdensome","burly","bustling","busy","buttery","buzzing","calculating","calm","candid","canine","capital","carefree","careful","careless","caring","cautious","cavernous","celebrated","charming","cheap","cheerful","cheery","chief","chilly","chubby","circular","classic","clean","clear","clear-cut","clever","close","closed","cloudy","clueless","clumsy","cluttered","coarse","cold","colorful","colorless","colossal","comfortable","common","compassionate","competent","complete","complex","complicated","composed","concerned","concrete","confused","conscious","considerate","constant","content","conventional","cooked","cool","cooperative","coordinated","corny","corrupt","costly","courageous","courteous","crafty","crazy","creamy","creative","creepy","criminal","crisp","critical","crooked","crowded","cruel","crushing","cuddly","cultivated","cultured","cumbersome","curly","curvy","cute","cylindrical","damaged","damp","dangerous","dapper","daring","darling","dark","dazzling","dead","deadly","deafening","dear","dearest","decent","decimal","decisive","deep","defenseless","defensive","defiant","deficient","definite","definitive","delayed","delectable","delicious","delightful","delirious","demanding","dense","dental","dependable","dependent","descriptive","deserted","detailed","determined","devoted","different","difficult","digital","diligent","dim","dimpled","dimwitted","direct","disastrous","discrete","disfigured","disgusting","disloyal","dismal","distant","downright","dreary","dirty","disguised","dishonest","dismal","distant","distinct","distorted","dizzy","dopey","doting","double","downright","drab","drafty","dramatic","dreary","droopy","dry","dual","dull","dutiful","each","eager","earnest","early","easy","easy-going","ecstatic","edible","educated","elaborate","elastic","elated","elderly","electric","elegant","elementary","elliptical","embarrassed","embellished","eminent","emotional","empty","enchanted","enchanting","energetic","enlightened","enormous","enraged","entire","envious","equal","equatorial","essential","esteemed","ethical","euphoric","even","evergreen","everlasting","every","evil","exalted","excellent","exemplary","exhausted","excitable","excited","exciting","exotic","expensive","experienced","expert","extraneous","extroverted","extra-large","extra-small","fabulous","failing","faint","fair","faithful","fake","false","familiar","famous","fancy","fantastic","far","faraway","far-flung","far-off","fast","fat","fatal","fatherly","favorable","favorite","fearful","fearless","feisty","feline","female","feminine","few","fickle","filthy","fine","finished","firm","first","firsthand","fitting","fixed","flaky","flamboyant","flashy","flat","flawed","flawless","flickering","flimsy","flippant","flowery","fluffy","fluid","flustered","focused","fond","foolhardy","foolish","forceful","forked","formal","forsaken","forthright","fortunate","fragrant","frail","frank","frayed","free","French","fresh","frequent","friendly","frightened","frightening","frigid","frilly","frizzy","frivolous","front","frosty","frozen","frugal","fruitful","full","fumbling","functional","funny","fussy","fuzzy","gargantuan","gaseous","general","generous","gentle","genuine","giant","giddy","gigantic","gifted","giving","glamorous","glaring","glass","gleaming","gleeful","glistening","glittering","gloomy","glorious","glossy","glum","golden","good","good-natured","gorgeous","graceful","gracious","grand","grandiose","granular","grateful","grave","gray","great","greedy","green","gregarious","grim","grimy","gripping","grizzled","gross","grotesque","grouchy","grounded","growing","growling","grown","grubby","gruesome","grumpy","guilty","gullible","gummy","hairy","half","handmade","handsome","handy","happy","happy-go-lucky","hard","hard-to-find","harmful","harmless","harmonious","harsh","hasty","hateful","haunting","healthy","heartfelt","hearty","heavenly","heavy","hefty","helpful","helpless","hidden","hideous","high","high-level","hilarious","hoarse","hollow","homely","honest","honorable","honored","hopeful","horrible","hospitable","hot","huge","humble","humiliating","humming","humongous","hungry","hurtful","husky","icky","icy","ideal","idealistic","identical","idle","idiotic","idolized","ignorant","ill","illegal","ill-fated","ill-informed","illiterate","illustrious","imaginary","imaginative","immaculate","immaterial","immediate","immense","impassioned","impeccable","impartial","imperfect","imperturbable","impish","impolite","important","impossible","impractical","impressionable","impressive","improbable","impure","inborn","incomparable","incompatible","incomplete","inconsequential","incredible","indelible","inexperienced","indolent","infamous","infantile","infatuated","inferior","infinite","informal","innocent","insecure","insidious","insignificant","insistent","instructive","insubstantial","intelligent","intent","intentional","interesting","internal","international","intrepid","ironclad","irresponsible","irritating","itchy","jaded","jagged","jam-packed","jaunty","jealous","jittery","joint","jolly","jovial","joyful","joyous","jubilant","judicious","juicy","jumbo","junior","jumpy","juvenile","kaleidoscopic","keen","key","kind","kindhearted","kindly","klutzy","knobby","knotty","knowledgeable","knowing","known","kooky","kosher","lame","lanky","large","last","lasting","late","lavish","lawful","lazy","leading","lean","leafy","left","legal","legitimate","light","lighthearted","likable","likely","limited","limp","limping","linear","lined","liquid","little","live","lively","livid","loathsome","lone","lonely","long","long-term","loose","lopsided","lost","loud","lovable","lovely","loving","low","loyal","lucky","lumbering","luminous","lumpy","lustrous","luxurious","mad","made-up","magnificent","majestic","major","male","mammoth","married","marvelous","masculine","massive","mature","meager","mealy","mean","measly","meaty","medical","mediocre","medium","meek","mellow","melodic","memorable","menacing","merry","messy","metallic","mild","milky","mindless","miniature","minor","minty","miserable","miserly","misguided","misty","mixed","modern","modest","moist","monstrous","monthly","monumental","moral","mortified","motherly","motionless","mountainous","muddy","muffled","multicolored","mundane","murky","mushy","musty","muted","mysterious","naive","narrow","nasty","natural","naughty","nautical","near","neat","necessary","needy","negative","neglected","negligible","neighboring","nervous","new","next","nice","nifty","nimble","nippy","nocturnal","noisy","nonstop","normal","notable","noted","noteworthy","novel","noxious","numb","nutritious","nutty","obedient","obese","oblong","oily","oblong","obvious","occasional","odd","oddball","offbeat","offensive","official","old","old-fashioned","only","open","optimal","optimistic","opulent","orange","orderly","organic","ornate","ornery","ordinary","original","other","our","outlying","outgoing","outlandish","outrageous","outstanding","oval","overcooked","overdue","overjoyed","overlooked","palatable","pale","paltry","parallel","parched","partial","passionate","past","pastel","peaceful","peppery","perfect","perfumed","periodic","perky","personal","pertinent","pesky","pessimistic","petty","phony","physical","piercing","pink","pitiful","plain","plaintive","plastic","playful","pleasant","pleased","pleasing","plump","plush","polished","polite","political","pointed","pointless","poised","poor","popular","portly","posh","positive","possible","potable","powerful","powerless","practical","precious","present","prestigious","pretty","precious","previous","pricey","prickly","primary","prime","pristine","private","prize","probable","productive","profitable","profuse","proper","proud","prudent","punctual","pungent","puny","pure","purple","pushy","putrid","puzzled","puzzling","quaint","qualified","quarrelsome","quarterly","queasy","querulous","questionable","quick","quick-witted","quiet","quintessential","quirky","quixotic","quizzical","radiant","ragged","rapid","rare","rash","raw","recent","reckless","rectangular","ready","real","realistic","reasonable","red","reflecting","regal","regular","reliable","relieved","remarkable","remorseful","remote","repentant","required","respectful","responsible","repulsive","revolving","rewarding","rich","rigid","right","ringed","ripe","roasted","robust","rosy","rotating","rotten","rough","round","rowdy","royal","rubbery","rundown","ruddy","rude","runny","rural","rusty","sad","safe","salty","same","sandy","sane","sarcastic","sardonic","satisfied","scaly","scarce","scared","scary","scented","scholarly","scientific","scornful","scratchy","scrawny","second","secondary","second-hand","secret","self-assured","self-reliant","selfish","sentimental","separate","serene","serious","serpentine","several","severe","shabby","shadowy","shady","shallow","shameful","shameless","sharp","shimmering","shiny","shocked","shocking","shoddy","short","short-term","showy","shrill","shy","sick","silent","silky","silly","silver","similar","simple","simplistic","sinful","single","sizzling","skeletal","skinny","sleepy","slight","slim","slimy","slippery","slow","slushy","small","smart","smoggy","smooth","smug","snappy","snarling","sneaky","sniveling","snoopy","sociable","soft","soggy","solid","somber","some","spherical","sophisticated","sore","sorrowful","soulful","soupy","sour","Spanish","sparkling","sparse","specific","spectacular","speedy","spicy","spiffy","spirited","spiteful","splendid","spotless","spotted","spry","square","squeaky","squiggly","stable","staid","stained","stale","standard","starchy","stark","starry","steep","sticky","stiff","stimulating","stingy","stormy","straight","strange","steel","strict","strident","striking","striped","strong","studious","stunning","stupendous","stupid","sturdy","stylish","subdued","submissive","substantial","subtle","suburban","sudden","sugary","sunny","super","superb","superficial","superior","supportive","sure-footed","surprised","suspicious","svelte","sweaty","sweet","sweltering","swift","sympathetic","tall","talkative","tame","tan","tangible","tart","tasty","tattered","taut","tedious","teeming","tempting","tender","tense","tepid","terrible","terrific","testy","thankful","that","these","thick","thin","third","thirsty","this","thorough","thorny","those","thoughtful","threadbare","thrifty","thunderous","tidy","tight","timely","tinted","tiny","tired","torn","total","tough","traumatic","treasured","tremendous","tragic","trained","tremendous","triangular","tricky","trifling","trim","trivial","troubled","true","trusting","trustworthy","trusty","truthful","tubby","turbulent","twin","ugly","ultimate","unacceptable","unaware","uncomfortable","uncommon","unconscious","understated","unequaled","uneven","unfinished","unfit","unfolded","unfortunate","unhappy","unhealthy","uniform","unimportant","unique","united","unkempt","unknown","unlawful","unlined","unlucky","unnatural","unpleasant","unrealistic","unripe","unruly","unselfish","unsightly","unsteady","unsung","untidy","untimely","untried","untrue","unused","unusual","unwelcome","unwieldy","unwilling","unwitting","unwritten","upbeat","upright","upset","urban","usable","used","useful","useless","utilized","utter","vacant","vague","vain","valid","valuable","vapid","variable","vast","velvety","venerated","vengeful","verifiable","vibrant","vicious","victorious","vigilant","vigorous","villainous","violet","violent","virtual","virtuous","visible","vital","vivacious","vivid","voluminous","wan","warlike","warm","warmhearted","warped","wary","wasteful","watchful","waterlogged","watery","wavy","wealthy","weak","weary","webbed","wee","weekly","weepy","weighty","weird","welcome","well-documented","well-groomed","well-informed","well-lit","well-made","well-off","well-to-do","well-worn","wet","which","whimsical","whirlwind","whispered","white","whole","whopping","wicked","wide","wide-eyed","wiggly","wild","willing","wilted","winding","windy","winged","wiry","wise","witty","wobbly","woeful","wonderful","wooden","woozy","wordy","worldly","worn","worried","worrisome","worse","worst","worthless","worthwhile","worthy","wrathful","wretched","writhing","wrong","wry","yawning","yearly","yellow","yellowish","young","youthful","yummy","zany","zealous","zesty","zigzag","rocky"];
 
@@ -60,155 +270,3 @@ window.onload = function () {
     return name;
 
 }
-  let i = 0;
-  while(i < 1000) { //循环名字数据 生成 new map
-    i++;
-    let userName = generateName();
-    if(userMap.has(userName.charAt(0))){
-      userMap.set(userName.charAt(0), {prefix: userName.charAt(0), userList: userMap.get(userName.charAt(0)).userList.concat(userName)});
-    }
-  }
-  // console.log(userMap.get('A'));
-  contactsList.insertAdjacentHTML(
-    "beforeend",
-    `${[...userMap].map((val) => `<ul class="contacts_list_container"></ul>`).join('')}`
-  );
-  let getAllContactsList = document.querySelectorAll(
-    ".contacts_list_container"
-  );
-    [...userMap].map((val, key, map) => {
-      // map loop 然后判断对应的数据
-      // console.log(val, key);
-      let userInfoItem = val[1].userList.map((subVal, subKey, map) => {
-        return `<li class="contacts_list_item">
-          <div class="contacts_avatar_container">
-            <span class="contacts_avatar"></span>
-          </div>
-          <div class="contacts_userinfo">
-            <span class="contacts_nickname">${subVal}</span>
-          </div>
-        </li>`;
-      });
-      getAllContactsList[key + 1].insertAdjacentHTML(
-        "afterbegin",
-        `<li class="contacts_list_top_sentinel"></li>
-        <li class="contacts_sticky">${val[0]}</li>${userInfoItem.join("")}
-          
-        `
-      );
-    });
-  
-  let sidebarList = new Set();
-  let sidebarListElement = document.querySelector(".sidebar_list");
-  // 判断 sticky 什么时候变绿色
-
-  let getAllSticky = document.querySelectorAll('.contacts_sticky');
-  const observer = new IntersectionObserver(
-    (records) => {
-      for (const record of records) {
-        // console.log(record, 'record');
-        const targetInfo = record.boundingClientRect;
-        const stickyTarget = record.target.parentElement.querySelector(
-          ".contacts_sticky"
-        );
-        const rootBoundsInfo = record.rootBounds;
-        // Started sticking.
-        // console.log(rootBoundsInfo, "rootBoundsInfo");
-        // console.log(targetInfo, stickyTarget, "targetInfo", "stickyTarget");
-        if (targetInfo.bottom < rootBoundsInfo.top) {
-          // console.log(stickyTarget, "top sticky");
-          // console.log(record, "top sticky");
-          stickyTarget.classList.add("contacts_sticky_active");
-        }
-        if (
-          targetInfo.bottom >= rootBoundsInfo.top &&
-          targetInfo.bottom < rootBoundsInfo.bottom
-        ) {
-          // console.log(stickyTarget);
-          // console.log(record);
-          stickyTarget.classList.remove("contacts_sticky_active");
-
-        }
-      }
-     
-    },
-    { threshold: [0] }
-  );
-  Array.prototype.slice.call(getAllSticky, null).forEach((val) => {
-    sidebarList.add([val.textContent, val.getBoundingClientRect().top]);
-  })
-  let getAllSentialTop = document.querySelectorAll(
-    ".contacts_list_top_sentinel"
-  );
-  Array.from(getAllSentialTop).forEach(val => { // 监听所有的top  sentialTop
-    observer.observe(val);
-  });
-  for (let item of sidebarList){
-      // console.log(item);
-      sidebarListElement.insertAdjacentHTML(
-        "beforeend",
-        `<li class="sidebar_item" data-scrollTop=${item[1]}>${item[0]}</li>`
-      );
-  }
-  let getAllSidebarItem = document.querySelectorAll('.sidebar_item');
-  
-  getAllSidebarItem.forEach((val) => {
-
-    val.onclick = function () {
-      // console.log(val);
-      window.scrollTo(0, val.dataset.scrolltop - 50);
-        Array.prototype.slice
-          .call(val.parentNode.children, null)
-          .forEach((sibling) => {
-            sibling.classList.remove("sidebar_item_active");
-          });
-           val.classList.add('sidebar_item_active');
-    }
-  })
-
-class wechatContacts {
-  officalAccount = [
-    { name: "新朋友", color: "avatar_orange" },
-    { name: "只聊天的朋友", color: "avatar_orange" },
-    { name: "群组", color: "avatar_green" },
-    { name: "标签", color: "avatar_blue" },
-    { name: "公众号", color: "avatar_blue" },
-    { name: "企业微信", color: "avatar_blue" },
-  ];
-  sidebarList = new Set();
-  contactsList = document.querySelector(".contacts_list");
-  listContainer = document.querySelector(".contacts_list_container");
-  userMap = new Map();
-  alphabet = Array.from(Array(26).keys()).map((val, i) => {
-    return String.fromCharCode(65 + i);
-  }); // 生成字母
-  init() {
-    // console.log('11111');
-    // console.log(this.officalAccount);
-  }
-  generateUserName() {}
-  generateUserList() {}
-  bottomBarClickHandle() {
-    let bottomTabbarItem = document.querySelectorAll(".contacts_tabbar_item");
-    // console.log(bottomItem);
-    bottomTabbarItem.forEach((val) => {
-      val.onclick = function () {
-        Array.prototype.slice
-          .call(val.parentNode.children, null)
-          .forEach((sibling) => {
-            sibling.classList.remove("contacts_tabbar_item_active");
-          });
-        val.classList.add("contacts_tabbar_item_active");
-      };
-    });
-  }
-  stickyObserver () {
-
-  }
-  sidebarScrollTopRect () {
-
-  }
-}
-}
-
-// new wechatContacts().init();
