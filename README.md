@@ -4,6 +4,6 @@ Clone the github repo to your local. and install live-server. running...
 
 ## answer files 
 
-### src/wechat_contacts.js | css | html
+### 微信联系人: src/wechat_contacts.js | css | html
 
-### src/pokerCardAlgorithm.js
+### 洗牌算法: src/pokerCardAlgorithm.js
